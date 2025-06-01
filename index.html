@@ -1,15 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Generador de Documentos Comerciales ET24</title>
+  <title>Factura Electrónica</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     :root {
       --color-primario: #4F46E5;
       --color-secundario: #6366F1;
-      --color-fondo: #FFFBEB; /* fondo amarillo muy suave */
+      --color-fondo: #FFFBEB;
       --color-texto: #1F2937;
       --color-borde: #E5E7EB;
     }
@@ -18,13 +19,14 @@
       padding: 2rem;
       background-color: var(--color-fondo);
       color: var(--color-texto);
+      font-size: 1.1rem;
     }
 
     .comprobante {
       border: 1px solid var(--color-borde);
       padding: 2rem;
       border-radius: 10px;
-      background-color: rgb(128, 203, 249);
+      background-color: rgb(255, 255, 255);
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
     }
 
@@ -57,21 +59,27 @@
     .encabezado, .detalle {
       border: 1px solid var(--color-borde);
       border-radius: 10px;
-      background-color: rgb(214, 220, 248);
-      padding: 1rem;
-      margin-bottom: 1.5rem;
+      background-color: rgb(241, 245, 249);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
     }
 
     .letra-b {
       border: 2px solid black;
       border-radius: 5px;
-      width: 30px;
-      height: 30px;
+      width: 40px;
+      height: 40px;
+      font-size: 1.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
       margin: auto;
+    }
+
+    table th, table td {
+      font-size: 1.1rem;
     }
 
     hr {
@@ -87,28 +95,12 @@
 <body>
   <div class="container" id="formulario">
     <h3 class="mb-4">Ingrese los datos para generar el comprobante</h3>
-    <div class="mb-3">
-      <label for="nombreEmpresa" class="form-label"><strong>Nombre de la empresa:</strong></label>
-      <input type="text" class="form-control" id="nombreEmpresa" />
-    </div>
-    <div class="mb-3">
-      <label for="direccionEmpresa" class="form-label"><strong>Dirección de la empresa:</strong></label>
-      <input type="text" class="form-control" id="direccionEmpresa" />
-    </div>
-    <div class="mb-3">
-      <label for="telefonoEmpresa" class="form-label"><strong>Teléfono de la empresa:</strong></label>
-      <input type="text" class="form-control" id="telefonoEmpresa" />
-    </div>
-    <div class="mb-3">
-      <label for="nombreCliente" class="form-label"><strong>Nombre del cliente:</strong></label>
-      <input type="text" class="form-control" id="nombreCliente" />
-    </div>
-    <div class="mb-3">
-      <label for="direccionCliente" class="form-label"><strong>Dirección del cliente:</strong></label>
-      <input type="text" class="form-control" id="direccionCliente" />
-    </div>
-    <div class="mb-3">
-      <label for="condicionIVA" class="form-label"><strong>Condición frente al IVA:</strong></label>
+    <div class="mb-3"><label for="nombreEmpresa" class="form-label"><strong>Nombre de la empresa:</strong></label><input type="text" class="form-control" id="nombreEmpresa" /></div>
+    <div class="mb-3"><label for="direccionEmpresa" class="form-label"><strong>Dirección de la empresa:</strong></label><input type="text" class="form-control" id="direccionEmpresa" /></div>
+    <div class="mb-3"><label for="telefonoEmpresa" class="form-label"><strong>Teléfono de la empresa:</strong></label><input type="text" class="form-control" id="telefonoEmpresa" /></div>
+    <div class="mb-3"><label for="nombreCliente" class="form-label"><strong>Nombre del cliente:</strong></label><input type="text" class="form-control" id="nombreCliente" /></div>
+    <div class="mb-3"><label for="direccionCliente" class="form-label"><strong>Dirección del cliente:</strong></label><input type="text" class="form-control" id="direccionCliente" /></div>
+    <div class="mb-3"><label for="condicionIVA" class="form-label"><strong>Condición frente al IVA:</strong></label>
       <select class="form-select" id="condicionIVA">
         <option>Consumidor Final</option>
         <option>Responsable Inscripto</option>
@@ -121,6 +113,7 @@
 
   <div class="container mt-5 d-none" id="contenedorComprobante">
     <div class="text-end mb-3">
+      <button class="btn btn-secondary me-2" onclick="reiniciarComprobante()">Reiniciar Comprobante</button>
       <button class="btn btn-success" onclick="generarPDF()">Generar PDF</button>
     </div>
     <div class="comprobante" id="comprobante"></div>
@@ -129,21 +122,28 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>
     let productos = [];
+    let datosFormulario = {};
 
-    window.onload = () => {
-      fetch('productos.json')
-        .then(res => res.json())
-        .then(data => {
-          productos = data;
-          console.log("Productos cargados:", productos);
-        })
-        .catch(err => {
-          console.error("Error cargando productos.json:", err);
-          alert("No se pudieron cargar los productos.");
-        });
-    };
+    function obtenerNumeroFactura() {
+      return parseInt(localStorage.getItem('numeroFactura') || '1');
+    }
 
-    function mostrarComprobante() {
+    function incrementarNumeroFactura() {
+      let numero = obtenerNumeroFactura() + 1;
+      localStorage.setItem('numeroFactura', numero.toString());
+      return numero;
+    }
+
+    async function cargarProductos() {
+      try {
+        const res = await fetch("productos.json");
+        productos = await res.json();
+      } catch (e) {
+        alert("No se pudieron cargar los productos: " + e.message);
+      }
+    }
+
+    async function mostrarComprobante() {
       const nombreEmpresa = document.getElementById("nombreEmpresa").value.trim();
       const direccionEmpresa = document.getElementById("direccionEmpresa").value.trim();
       const telefonoEmpresa = document.getElementById("telefonoEmpresa").value.trim();
@@ -156,46 +156,52 @@
         return;
       }
 
-      if (productos.length === 0) {
-        alert("Los productos aún no están cargados. Por favor, espere un momento y recargue la página.");
-        return;
-      }
+      await cargarProductos();
 
+      datosFormulario = { nombreEmpresa, direccionEmpresa, telefonoEmpresa, nombreCliente, direccionCliente, condicionIVA };
       document.getElementById("formulario").classList.add("d-none");
       document.getElementById("contenedorComprobante").classList.remove("d-none");
 
-      generarComprobante(nombreEmpresa, direccionEmpresa, telefonoEmpresa, nombreCliente, direccionCliente, condicionIVA);
+      generarComprobante();
     }
 
-    function generarComprobante(nombreEmpresa, direccionEmpresa, telefonoEmpresa, nombreCliente, direccionCliente, condicionIVA) {
+    function generarComprobante() {
+      const { nombreEmpresa, direccionEmpresa, telefonoEmpresa, nombreCliente, direccionCliente, condicionIVA } = datosFormulario;
       const fecha = new Date().toLocaleDateString();
-      const cantidadItems = Math.floor(Math.random() * 20) + 1;
+      const numeroFactura = obtenerNumeroFactura();
+
+      const cantidadItems = Math.floor(Math.random() * 5) + 1;
       const items = [];
-      let total = 0;
+      let subtotalSinIVA = 0;
 
       for (let i = 0; i < cantidadItems; i++) {
         const producto = productos[Math.floor(Math.random() * productos.length)];
-        const cantidad = Math.floor(Math.random() * 8) + 1;
-        const subtotal = cantidad * parseFloat(producto.precio);
-        total += subtotal;
-        items.push({ cantidad, ...producto, subtotal });
+        const cantidad = Math.floor(Math.random() * 5) + 1;
+        let precioUnitario = producto.precio;
+        if (condicionIVA === "Responsable Inscripto") {
+          precioUnitario = producto.precio / 1.21;
+        }
+        const subtotal = cantidad * precioUnitario;
+        subtotalSinIVA += subtotal;
+        items.push({ cantidad, nombre: producto.nombre, precio: precioUnitario, subtotal });
       }
+
+      const ivaTotal = subtotalSinIVA * 0.21;
+      const totalConIVA = subtotalSinIVA + ivaTotal;
 
       const comprobanteDiv = document.getElementById("comprobante");
       comprobanteDiv.innerHTML = `
         <div class="encabezado">
           <div class="row align-items-center">
             <div class="col-md-4">
-              <p class="mb-1"><strong>${nombreEmpresa}</strong></p>
+              <p class="mb-1 fw-bold fs-5">${nombreEmpresa}</p>
               <p class="mb-1">${direccionEmpresa}</p>
               <p class="mb-1">Tel: ${telefonoEmpresa}</p>
             </div>
-            <div class="col-md-4 text-center">
-              <div class="letra-b mb-2">B</div>
-            </div>
+            <div class="col-md-4 text-center"><div class="letra-b mb-2">B</div></div>
             <div class="col-md-4 text-end">
-              <p class="mb-1"><strong>Factura</strong></p>
-              <p class="mb-1">0001 - 00</p>
+              <p class="mb-1 fs-5 fw-bold">Factura</p>
+              <p class="mb-1">N° 0001-${numeroFactura.toString().padStart(2, "0")}</p>
               <p class="mb-1">Fecha: ${fecha}</p>
             </div>
           </div>
@@ -207,7 +213,7 @@
 
         <div class="detalle">
           <h2>Detalle de Compra</h2>
-          <table class="table table-striped">
+          <table class="table table-bordered">
             <thead style="background-color: var(--color-primario); color: white;">
               <tr>
                 <th>Cantidad</th>
@@ -221,28 +227,43 @@
                 <tr>
                   <td>${item.cantidad}</td>
                   <td>${item.nombre}</td>
-                  <td>$${parseFloat(item.precio).toFixed(2)}</td>
+                  <td>$${item.precio.toFixed(2)}</td>
                   <td>$${item.subtotal.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           <hr />
-          <p class="text-end fw-bold fs-5">Total: $${total.toFixed(2)}</p>
-        </div>
-      `;
+          ${condicionIVA === "Responsable Inscripto" ? `
+            <div class="text-end">
+              <p class="mb-1 fs-5 fw-bold">Subtotal sin IVA: $${subtotalSinIVA.toFixed(2)}</p>
+              <p class="mb-1 fs-5 fw-bold">IVA 21%: $${ivaTotal.toFixed(2)}</p>
+              <p class="mb-0 fs-4 fw-bold">Total con IVA: $${totalConIVA.toFixed(2)}</p>
+            </div>
+          ` : `
+            <p class="text-end fw-bold fs-4">Total: $${totalConIVA.toFixed(2)}</p>
+          `}
+        </div>`;
+    }
+
+    function reiniciarComprobante() {
+      if (!datosFormulario || Object.keys(datosFormulario).length === 0) {
+        alert("No hay datos previos para regenerar el comprobante.");
+        return;
+      }
+      incrementarNumeroFactura();
+      generarComprobante();
     }
 
     function generarPDF() {
       const comprobanteDiv = document.getElementById("comprobante");
-      const opt = {
-        margin:       0.5,
-        filename:     'comprobante.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-      html2pdf().set(opt).from(comprobanteDiv).save();
+      html2pdf().set({
+        margin: 0.5,
+        filename: 'comprobante.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      }).from(comprobanteDiv).save();
     }
   </script>
 </body>
