@@ -170,7 +170,7 @@
       const fecha = new Date().toLocaleDateString();
       const numeroFactura = obtenerNumeroFactura();
 
-      const cantidadItems = Math.floor(Math.random() * 5) + 1;
+      const cantidadItems = Math.floor(Math.random() * 15) + 1;
       const items = [];
       let subtotalSinIVA = 0;
 
@@ -198,7 +198,7 @@
               <p class="mb-1">${direccionEmpresa}</p>
               <p class="mb-1">Tel: ${telefonoEmpresa}</p>
             </div>
-            <div class="col-md-4 text-center"><div class="letra-b mb-2">B</div></div>
+            <div class="col-md-4 text-center"><div class="letra-b mb-2">${condicionIVA === "Responsable Inscripto" ? "A" : "B"}</div></div>
             <div class="col-md-4 text-end">
               <p class="mb-1 fs-5 fw-bold">Factura</p>
               <p class="mb-1">N° 0001-${numeroFactura.toString().padStart(2, "0")}</p>
@@ -218,8 +218,8 @@
               <tr>
                 <th>Cantidad</th>
                 <th>Producto</th>
-                <th>Precio Unitario</th>
-                <th>Subtotal</th>
+                <th class="text-end">Precio Unitario</th>
+                <th class="text-end">Subtotal</th>
               </tr>
             </thead>
             <tbody>
@@ -227,21 +227,39 @@
                 <tr>
                   <td>${item.cantidad}</td>
                   <td>${item.nombre}</td>
-                  <td>$${item.precio.toFixed(2)}</td>
-                  <td>$${item.subtotal.toFixed(2)}</td>
+                  <td class="text-end">$${item.precio.toFixed(2)}</td>
+                  <td class="text-end">$${item.subtotal.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           <hr />
           ${condicionIVA === "Responsable Inscripto" ? `
-            <div class="text-end">
-              <p class="mb-1 fs-5 fw-bold">Subtotal sin IVA: $${subtotalSinIVA.toFixed(2)}</p>
-              <p class="mb-1 fs-5 fw-bold">IVA 21%: $${ivaTotal.toFixed(2)}</p>
-              <p class="mb-0 fs-4 fw-bold">Total con IVA: $${totalConIVA.toFixed(2)}</p>
-            </div>
+            <table class="table table-borderless w-50 ms-auto">
+    <tbody>
+      <tr>
+        <th class="text-end">Subtotal sin IVA:</th>
+        <td class="text-end">$${subtotalSinIVA.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <th class="text-end">IVA 21%:</th>
+        <td class="text-end">$${ivaTotal.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <th class="text-end fs-5">Total con IVA:</th>
+        <td class="text-end fs-5 fw-bold">$${totalConIVA.toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
           ` : `
-            <p class="text-end fw-bold fs-4">Total: $${totalConIVA.toFixed(2)}</p>
+            <table class="table table-borderless w-50 ms-auto">
+    <tbody>
+      <tr>
+        <th class="text-end fs-5">Total:</th>
+        <td class="text-end fs-5 fw-bold">$${totalConIVA.toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
           `}
         </div>`;
     }
